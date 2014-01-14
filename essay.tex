@@ -1,48 +1,129 @@
-" Press ? for help
 
-.. (up a dir)
-/home/inge/
-▸ Books/
-▸ Desktop/
-▸ Documents/
-▸ Downloads/
-▸ Images/
-▸ Matlab/
-▸ MATLAB/
-▾ Projects/
-  ▸ Afstudeerproject/
-  ▸ Autonome-Mobiele-Robots/
-  ▾ Computer-Animation/
-  ▸ dwm/
-  ▸ FirstPersonController/
-  ▸ Games/
-  ▸ Graphics/
-  ▸ KBM/
-  ▸ maartens-config/
-  ▸ Opengl/
-  ▸ Terminator/
-  ▸ Tweedejaars-project/
-  ▸ vundle/
-  ▸ YouCompleteMe/
-▸ System/
-▸ wekafiles/
-▸ workspace/
-▸ ycm-build/
-▸ ycm_temp/
-  50-synaptics.conf [RO]
-  901350_S03.ppt
-  getting_started(3).pdf
-  KBM-Intro.pdf
-  linprog.m
-  matl11bu.iso
-  matlab_crash_dump.3746-1
-  matlab_crash_dump.4237-1
-  matlab_crash_dump.4570-1
-  matlab_crash_dump.4728-1
-  matlab_crash_dump.4969-1
-  matlab_crash_dump.5140-1
-  raster.pdf
-  story_engine.png
-  stupid.jpg
-  transformations(2).pdf
-  UBuzz-Short.pdf
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+
+\title{Computer Animation Essay\\ Automatic Rigging Methods}
+\author{Inge Becht\\ 4157281}
+\date{\today}
+
+\usepackage{natbib}
+\usepackage{graphicx}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+%what is skeletal animation?
+In computer animation, skeletal animation is often used as an intuitive method for modeling characters. When applying skeletal animation, the created mesh model is provided with an underlying hierarchical skeleton, which is attached to the model, and specifies how the mesh can be deformed. The process of forming the underlying skeleton and fitting it to the model is called rigging, and is normally done by hand. 
+%why is it used?
+
+%why is it problematic?
+Rigging by hand, however, can be a rather daunting task for beginning 3d modelers \citep{paper1}, but also a time consuming job for expert animators, as each model needs to be rigged separately, even though their anatomy might be quite a like.
+%What is automatic rigging?
+In this essay, we explore the concept of automatic rigging. As indicated by the name, the main idea of automatic rigging is that no outside intervention is needed to rig the model.
+%What are the papers that will be studied? What are their methods?
+Various papers are written about the subject. We will mostly limit ourselves to the works of \citep{paper1}, \citep{paper2} and \citep{paper3}, which have found diverse solution to the proposed problems, all with their own pros and cons.
+%What are some criteria that should be dealt with?
+The automatic rigging methods proposed in the research papers need to meet certain criteria to be considered good. We will evaluate the research on the following aspects which we find important, of which some are proposed by the researches themselves:
+
+\begin{itemize}
+\item Performance: The process should not take longer than manual rigging, and preferably faster than that
+\item Generality: The process should be applicable on a great diversity of models.
+\item Self sufficiency: The process should minimize constraints on the end user.
+\item Robustness: In case modeling goes wrong, is it easily fixable?
+\end{itemize}
+These criteria will be our guideline while evaluating the proposed automatic rigging processes.
+
+%Small Summary of what will be found in the paper.
+The outline of this essay is as follows. First we will talk about the methods utilised by the different researches, to give a good understanding of their differences. Giving these differences, and their advantages and disadvantages on a high level, we will talk about their resulting performance giving the above mentioned evaluation points. After this, we discuss the specific applications to which each mentioned technique will be applied. Lastly, the conclusion follows.
+
+\section{Method}
+Making a character mesh come to life consists of two specific parts. The rigging of the character, as explained in the introduction, and the skinnning, where the deformation of the mesh is assigned to the bones. In this section we will talk about the specific approaches for each paper for these two steps.
+
+\subsection{Rigging}
+    \subsection{Skeleton embedding and skeleton extraction}
+    Automatic rigging is done by one of two distinct approaches, namely skeleton embedding and skeleton extraction. In the case of skeleton embedding, there is a fixed skeleton template ready to be embedded into a character model, using an optimisation function. Skeleton embedding is used by \citep{paper1}, in which a template for biped and quadruped skeletons is embedded in character     models. In the case of skeleton extraction there are no template skeletons, but the skeleton is     extracted using the topology of the character. Skeleton extraction is used by \citep{paper2},        making a diverse set of character rigging a possibility.
+
+    Both skeleton embedding and skeleton extraction have their advantages and disadvantages, which     we will discuss next. We will discuss these aspects in the following sections, where we talk     about the problems more in depth. 
+
+    In \citep{paper3} both extraction and embedding are combined, in the attempt to    
+
+\subsubsection{Skeleton embedding using continuous optimization}
+ In the case of skeleton embedding, there are some prerequisites. It requires pre made skeletons to be embedded into the mesh, and a function that determines the optimal way to embed the skeleton. 
+ The authors of \citep{paper1} used a single biped skeleton to be fitted onto humanoid meshes, and a quadruped skeleton to be used on quadrupedal characters. In their approach the volume of the to be rigged mesh is discretized for computation efficiency and the final placement is determined using optimal margin optimisation.
+ 
+ To create an optimal embedding of the skeleton, first a discretization of the existing volume takes place, so not the complete space is considered for the skeleton placement. To this end the medial surface of the mesh is found, which contains the inner volume of where one would expect to find skeletal structure. The median surface is found by creating a distance field.
+ 
+ The final discretization is a graph in which each vertex is a candidate for a joint position of the skeleton and each edge is a candidate bone position belonging to the joints \citep{paper1}. 
+ 
+ To find a desirable fitting, undesired embeddings should be penalized. Possible aspects of such undesirable embeddings are short bones, improper orientation between joints, length difference in bones marked symmetric, bone chains sharing vertices, feet away from the bottom, zero-length bone chains, improper orientations of bones and joints close together in the graph, but far away in skeleton\citep{paper1}. To find the optimal weight for each penalty function, a maximum margin linear classifier is learned.
+This approach is called maximum margin because it tries to maximize the margin between the best bad and best good embedding (as labeled in the training set), so that there is a clear embedding of correct and incorrect classifications. The learning procedure itself is conducted using Nelder-Mead{explain more in depth how}.
+
+The optimal embedding of the skeleton is now calculated using A*. To reduce the search space somewhat more, all second degree joints are removed from the skeleton to fit, giving a simplified skeleton to be fitted. By using a priority queue and extending the skeleton one bone at a time, the algorithm stops in case one embedding is completed, as it is assured the optimal one.
+
+When the final fit is found, the merged joints are reinserted by breaking up the found edges in proportion to the original skeleton , and a final optimisation step takes place to make sure these joints are nicely positioned inside the mesh, the bones are of decent length (with regards to the skeleton we started out with) and the orientation of the bones are as desired.
+
+
+\subsubsection{Skeleton extraction using 3D silhouettes}
+Skeleton embedding might seem like a rather straightforward choice for solving the automatic rigging problem, but it has its disadvantages. The most notable one is that it makes the assumption that the user, or the algorithm itself, has predefined skeletons which will fit the input model. This makes the performance of the automatic rigging method limited to the diversity of characters that can be rigged, and not self-sufficient in the case that it accepts skeletons prepared by the users.
+
+The use of skeleton extraction circumvents the issue of needing a predefined skeleton, by looking for the skeletal property within the mesh self. Pan et al. \citep{paper2} take this skeletal approach by extracting the medial axis, of the input mesh, and from this generates the animation skeleton. This is done by a method called 3D silhouettes by Pan et al. We will explain the steps taken towards skeleton extraction in this specific paper next.
+
+To extract the skeleton from a mesh, Pan et al. 
+The approach taken by Pan et al. for extracting the medial axis, is using 3D silhouettes. A 3D silhouette is a projection of a 3D object onto a 2D plane, but keeping the depth information stored. The 3D silhouette is determined for two perpendicular views of the mesh, after which for each of them the median axis is determined. In the final step the median axis are combined, to correctly calculate the depth information of the median axis that was lost due to the projection.
+
+When the medial axis is calculated, still the final skeleton needs to be calculated. Firstly, the median axis will probably not be continuous 
+
+
+
+
+\subsubsection{Embedding and extraction combined}
+Although skeleton extraction can handle more generic cases than skeleton embedding, it also has quite a big disadvantage. In case the user already has motion data applied to a skeleton, 
+the extracted skeleton might make this mapping impossible.
+Both skeleton extraction and embedding have some clear disadvantages, making it hard to 
+
+
+\subsection{Skinning}
+To pose the model using the skeleton, it still has to be decided how the model is deformed by the moving skeleton. This process is called skinning. For the skinning part, all three techniques use a procedure called LSB.
+%talk about tome positive and negative approaches 
+
+
+\subsection{Evaluation}
+In this section we will talk about the results of each of the approaches with regards to time, generality and comparison towards other models.
+
+\subsection{Performance}
+%All papers are rather fast in their approach, we could possibly write some more in depth 
+%sphere packing in paper 1 O(nb)
+\subsection{self-sufficiency}
+%paper 1 is very reliant on the pose in which the mesh is delivered. It also uses quick hacks like " the feet are at the bottom" to perform well.
+\subsection{Generality}
+%Paper 1 can use new skeletons without needing threcalculate the weights, so making it more general, as well as self sufficient
+%It does however use 
+% even if paper 1 used more than a single skeleton throughout the whole embedding process, it has no criteria on which to fit the models.
+% It could possibly for all embeddings check the least penalized embedding, but in the current state this is not implemented.
+% Paper2 the generation of the curve skeleton from the medial axis only works in case the basic shape of the 
+
+\subsection{Limitations}
+\subsection{Robustness}
+%Paper 1 gives the ability to give hints in case of wrong classification. Such a hint can be labeling the vertices like 
+% In case there are no vertices at the position that are desired to map the skeleton on, there is no way of saving the embedding. For example, in case the mesh has rather thin arms, and so the arms are not fitted correctly, there is no way of changing the layout, making user changes very limited because of the discretization step.
+
+\section{Usage}
+%The usage of paper 3 is quite clear. It 
+
+\section{Conclusion}
+Give a small summary about what is said
+
+What can we conclude about the 3 papers?
+All 3 papers seem to have a slightly different goal wanting to be reached.Paper 3 seems to focus on realistic models the way their algorithm works (For example, thin legged creatures must be birds, and so cannot be humans) but it does restrict creative freedom. In paper 1 this creative freedom is very important to the researchers, but the final application is very limited, with their a
+
+What do I think is best?
+To me, paper 2 seems the most promising in the way it works, as there is no limitation as to what 
+kind of creatures it can make. A big problem. however, is the creation of the joint positions. Both relying on the model position showing angles at every real joint position as well as creating a database of stored joints is problematic, the first because it relies on the end users for creating a pose, the latter because it loses the generality it had in the first place (like we see in the works of paper 3). In my opinion, this part could best be solved by another solution entirely. In my opinion the first solution is a better one as the second.
+
+do I have some views myself on how this could be improved?
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}
