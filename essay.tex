@@ -1,4 +1,3 @@
-
 \documentclass{article}
 \usepackage[utf8]{inputenc}
 
@@ -43,10 +42,11 @@ following aspects which we find important, of which some are proposed by the
 researches themselves:
 
 \begin{itemize}
-\item Performance: The process should not take longer than manual rigging, and preferably faster than that
+\item Performance: The process should not take longer than manual rigging, and
+    preferably be faster than that.
 \item Generality: The process should be applicable on a great diversity of models.
 \item Self sufficiency: The process should minimize constraints on the end user.
-\item Robustness: In case modeling goes wrong, is it easily fixable?
+\item Robustness: In case modeling goes wrong, it is desirably easily fixable.
 \end{itemize}
 These criteria will be our guideline while evaluating the proposed automatic rigging processes.
 
@@ -64,7 +64,7 @@ of the character, as explained in the introduction, and the skinnning, where the
 deformation of the mesh is assigned to the bones. In this section we will talk
 about the specific approaches for each paper for these two steps.
 
-\subsection{Rigging}
+\subsection{Skeleton generation}
     \subsection{Skeleton embedding and skeleton extraction}
 Automatic rigging is done by one of two distinct approaches, namely skeleton
 embedding and skeleton extraction. In the case of skeleton embedding, there
@@ -134,39 +134,144 @@ makes the assumption that the user, or the algorithm itself, has predefined
 skeletons which will fit the input model. This makes the performance of the
 automatic rigging method limited to the diversity of characters that can be
 rigged, and not self-sufficient in the case that it accepts skeletons prepared
-by the users.
+by the users. 
 
 The use of skeleton extraction circumvents the issue of needing a predefined
 skeleton, by looking for the skeletal property within the mesh self. Pan et al.
-\citep{paper2} take this skeletal approach by extracting the medial axis, of the
-input mesh, and from this generates the animation skeleton. This is done by a
-method called 3D silhouettes by Pan et al. We will explain the steps taken
-towards skeleton extraction in this specific paper next.
+\citep{paper2} take this skeletal approach, which will be explained next.
 
-To extract the skeleton from a mesh, Pan et al.  The approach taken by Pan et
-al. for extracting the medial axis, is using 3D silhouettes. A 3D silhouette is
-a projection of a 3D object onto a 2D plane, but keeping the depth information
-stored. The 3D silhouette is determined for two perpendicular views of the mesh,
-after which for each of them the median axis is determined. In the final step
-the median axis are combined, to correctly calculate the depth information of
-the median axis that was lost due to the projection.
+% what is the medial axis and why is it used
+To extract the skeleton from a mesh, Pan et al. use the medial axis as a
+guideline for finding the final animation skeleton. The medial axis consists of all points that have more than one
+closest point on the boundary of the object. In other words, it consists of
+point within the model that are centered with regards to the boundary of the
+mesh. In case the medial axis is determined for a three dimensional shape, it most likely
+is a surface (called the medial surface, as we have seen before in the case of
+paper \citep{paper1}) but for a 2D object the medial axis will consists of
+curves. These curves can be quite straightforwardly converted to a skeleton, as
+it gives the exact centered placement for the bones within the mesh. Pan et al.
+use 3D silhouettes, two dimensional projections with the depth information stored along
+the silhouette, to find the medial axis of a 3D model.
 
-When the medial axis is calculated, still the final skeleton needs to be
-calculated. Firstly, the median axis will probably not be continuous 
+To take the 3D silhouette from a mesh, first the optimal projection of the model
+onto a two dimensional plane must be determined. An optimal projection is a
+projection in which there is as little occlusion as possible, so that when
+determining the medial axis, all parts of the character model are considered.
+The optimal projection is thus considered the projection with the maximum
+surface area. When this projection is determined, a global and a local search
+are used to determine the 3D silhouette. In the global search the vertices
+making up the 3D silhouette are determined. 
+
+When the vertices belonging to the 3D silhouette are found using global search,
+it is very likely these points are not connected in the mesh, due to
+differences in depth between these vertices. The local search finds the shortest
+route between every vertex of the 3D silhouette, and adds these in-between
+vertices to the 3D silhouette vertices. Adding these vertices will add more
+detail to the medial axis. %FIXME is this really the case?
+
+After the 3D silhouette is found, the medial axis can be determined. This is
+achieved by discretizing the silhouette in triangles, using Delaunay
+Triangulation. For each triangle edge that is not on the boundary of the
+silhouette, the midpoint is calculated. These points are then connected using
+linear interpolation, creating one or multiple curves within the mesh. By
+considering only the inner edges of the triangles, it is assured that none of
+the curves make contact with the mesh boundary, which is desirable for the final
+skeleton.
+
+Because the application of the delaunay triangulation did not take the depth
+into account, the medial axis calculation might be slightly off center. This is fixed
+by looking for a perpendicular projection to the one used for the initial
+silhouette creation. This is done for every curve by finding the projection
+vector that is orthogonal on both the curve and the previous projection vector.
+For this new projection the 3D silhouette is determined the same way as before.
+The final refinement of the curve skeleton is  every element of the curve
+finding the four nearest neighbours on the second silhouette, and then
+interpolating between these four points.
+
+When the medial axis is refined, the different curves need to be combined to a
+single skeleton. All endpoints between each curve is considered a joint, and are
+connected together. These, however are not all the joints in the skeleton only
+the junctions between different limbs. To determine where the second degree
+joints should be positioned in this skeleton, the authors look at the degree of
+bending in the extracted curve. If the bending angle between positions on the curve is 
+significant (which in this research means more than 18 degrees of bending), a
+joint is added at that position.
+
+\subsubsection{Combining embedding and extraction} Although skeleton extraction
+can handle more generic cases than skeleton embedding, due to not needing any
+knowledge a priori on the topology of the character, there is also the
+disadvantage in that the model must be expressive enough for the skeleton to be
+correctly\footnote{This of cou} extracted. We see this clearly in the way that
+second degree joints need to be determined in the works of \citep{paper2}. Take
+for example the case of a humanoid model standing in T-Pose (not an uncommon
+pose to model a character in). If this skeleton extraction algorithm were to be run for
+this particular model, it's output skeleton would be likely missing its elbow, and knee
+joints. 
+
+\citep{paper3} suggests a method that combines embedding and extraction in such
+a way that a semantic judgement is made about the extracted curve, specifying
+what kind of character is being depicted in the model. The best-fitting template-skeleton can then
+be fitted into the model.
+
+The researchers use a curve extraction method called pseudonormal vector fields
+which has been a result of earlier results, but any curve extractor that uses
+distance fields could be used (so the method in \citep{paper2} is not ideal to
+apply in this case). After the curve skeleton is extracted, the
+curve is preprocessed. This preprocessing step makes sure that so called
+symmetry segments come together at a single junction point. Symmetry segments
+are limbs that should be paired together. So in case of a human, the arms would
+be symmetry segments, and the legs would be symmetry segments. In case there are
+two different junctions whose difference in distance is small to any endpoint of
+the curve, the two junctions are merged together.
+% They do not tlak about normalizing the size of the models, so i do not see how
+% a single treshold could ever work
+
+Now that we are certain that symmetric segments of the model come
+together in junction points, this can be exploited towards determining what kind
+of creature is being depicted by the model. To get any substantial understanding
+of the topology of this curve skeleton, however, we need to determine what are
+the symmetry segments and what is the symmetry axis. The symmetry axis is the
+curve to which all extremities are connected. To determine which is which, the
+junction closest to the centroid of the character is found. The two longest
+segments attached to this junction are considered the limbs, the remaining
+segments are automatically part of the symmetry axis in case there are only one
+or two segments at the junction left. In case there are more than two, the
+remaining segments are first devided in groups that end up in other junction
+points, and others that end up in an extremity. The symmetry axis segments are
+then segments from the first group that make the biggest angle. In case there
+are one or less segments available in here, segments from the scond group are
+used as well. This is repeated for every new junction node found on the symmetry
+axis, until the complete symmetry axis is found.
+
+
+Now that the symmetry axis can be 
+% Find centroid
+% Find closest junction to centroid. This will be on the symmetry axis.
+% We look at all segments of this junction. The longest ones are decomposed, the
+% shorter ones are considered part of the symmetry axis. If 2 remain, they are
+% immediately part of it. If 3 remain
+
+ 
 
 
 
-\subsubsection{Embedding and extraction combined} Although skeleton extraction
-can handle more generic cases than skeleton embedding, it also has quite a big
-disadvantage. In case the user already has motion data applied to a skeleton,
-the extracted skeleton might make this mapping impossible.  Both skeleton
-extraction and embedding have some clear disadvantages, making it hard to 
-
+%
+%We clearly seesome approaches towar
+%It makes a very clear space in which the final skeleton will be embedded. It
+%also has a better selection procedure for choosing the to be fitted skeleton
+%that this approach taken by \citep{paper3} does not remove all
+%disadvantages of embedding and extraction. In the case of 
+%It also has some limitations, which we will discuss in the evaluation.
 
 \subsection{Skinning}
 To pose the model using the skeleton, it still has to be decided how the model
 is deformed by the moving skeleton. This process is called skinning. For the
-skinning part, all three techniques use a procedure called LSB.
+skinning part there is not much diversity between the different researches. All
+three apply a method called Linear Blend Skinning, which is a well established skinning method due
+to its speeds and performance.
+
+%Talk about how it works
+
 %talk about tome positive and negative approaches 
 
 
@@ -177,6 +282,7 @@ regards to time, generality and comparison towards other models.
 \subsection{Performance}
 %All papers are rather fast in their approach, we could possibly write some more in depth 
 %sphere packing in paper 1 O(nb)
+% Paper 2 is very fast, because they only have to consider 
 \subsection{self-sufficiency}
 %paper 1 is very reliant on the pose in which the mesh is delivered. It also uses quick hacks like " the feet are at the bottom" to perform well.
 \subsection{Generality}
@@ -186,7 +292,13 @@ regards to time, generality and comparison towards other models.
 % It could possibly for all embeddings check the least penalized embedding, but in the current state this is not implemented.
 % Paper2 the generation of the curve skeleton from the medial axis only works in case the basic shape of the 
 
+% Problem: The detail of a skeleton migt be too high for a simpler input model.
+% Slight 
+
 \subsection{Limitations}
+In case the user already has motion data applied to a skeleton,
+the extracted skeleton might make this mapping impossible.  Both skeleton
+extraction and embedding have some clear disadvantages, making it hard to 
 \subsection{Robustness}
 %Paper 1 gives the ability to give hints in case of wrong classification. Such a
 %hint can be labeling the vertices like In case there are no vertices at the
@@ -195,6 +307,8 @@ regards to time, generality and comparison towards other models.
 %are not fitted correctly, there is no way of changing the layout, making user
 %changes very limited because of the discretization step.
 
+% Paper 2 global search seems robust? in worst case it can always add its
+% neighbours to the mesh
 \section{Usage}
 %The usage of paper 3 is quite clear. It 
 
