@@ -59,26 +59,27 @@ mentioned evaluation points. After this, we discuss the specific applications to
 which each mentioned technique will be applied. Lastly, the conclusion follows.
 
 \section{Method}
-Making a character mesh come to life consists of two specific parts. The rigging
-of the character, as explained in the introduction, and the skinnning, where the
-deformation of the mesh is assigned to the bones. In this section we will talk
-about the specific approaches for each paper for these two steps.
+Rigging a character can be subdivided in two different stepss. The generation
+and placement of the skeleton inside the mesh, and the skinning part, where it
+is specified how the mesh is deformed by the skeleton structure. In this section we will talk
+about the approach each research takes to this problem, and the motivation for
+taking that specific approach.
 
-\subsection{Skeleton generation}
-    \subsection{Skeleton embedding and skeleton extraction}
-Automatic rigging is done by one of two distinct approaches, namely skeleton
+\subsection{Skeleton generation and placement}
+The first part of the rigging pocess, generation and placement of the skeleton, 
+is done by one of two distinct approaches, namely skeleton
 embedding and skeleton extraction. In the case of skeleton embedding, there
 is a fixed skeleton template ready to be embedded into a character model,
 using an optimisation function. Skeleton embedding is used by
 \citep{paper1}, in which a template for biped and quadruped skeletons is
-embedded in character     models. In the case of skeleton extraction there
-are no template skeletons, but the skeleton is     extracted using the
+embedded in character models. In the case of skeleton extraction there
+are no template skeletons, but the skeleton is extracted using the
 topology of the character. Skeleton extraction is used by \citep{paper2},
 making a diverse set of character rigging a possibility.
 
 Both skeleton embedding and skeleton extraction have their advantages and
-disadvantages, which     we will discuss next. We will discuss these aspects in
-the following sections, where we talk     about the problems more in depth. 
+disadvantages, which we will discuss next. We will discuss these aspects in
+the following sections, where we talk about the problems more in depth. 
 
 In \citep{paper3} both extraction and embedding are combined, in the attempt to    
 
@@ -199,19 +200,20 @@ joint is added at that position.
 
 \subsubsection{Combining embedding and extraction} Although skeleton extraction
 can handle more generic cases than skeleton embedding, due to not needing any
-knowledge a priori on the topology of the character, there is also the
+prior knowledge on the topology of the character, there is also the
 disadvantage in that the model must be expressive enough for the skeleton to be
-correctly\footnote{This of cou} extracted. We see this clearly in the way that
+correctly  extracted. We see this clearly in the way that
 second degree joints need to be determined in the works of \citep{paper2}. Take
 for example the case of a humanoid model standing in T-Pose (not an uncommon
 pose to model a character in). If this skeleton extraction algorithm were to be run for
-this particular model, it's output skeleton would be likely missing its elbow, and knee
+this particular model, it's output skeleton would be likely missing its elbow and knee
 joints. 
 
 \citep{paper3} suggests a method that combines embedding and extraction in such
-a way that a semantic judgement is made about the extracted curve, specifying
-what kind of character is being depicted in the model. The best-fitting template-skeleton can then
-be fitted into the model.
+a way that the extracted curve skeleton becomes the embedding space on which semantic
+judgement can be made about what kind of character is being depicted by the
+model.
+The best-fitting template-skeleton can then be embedded in the model my aligning it with the curve skeleton..
 
 The researchers use a curve extraction method called pseudonormal vector fields
 which has been a result of earlier results, but any curve extractor that uses
@@ -231,7 +233,8 @@ together in junction points, this can be exploited towards determining what kind
 of creature is being depicted by the model. To get any substantial understanding
 of the topology of this curve skeleton, however, we need to determine what are
 the symmetry segments and what is the symmetry axis. The symmetry axis is the
-curve to which all extremities are connected. To determine which is which, the
+curve to which all extremities are connected (for a human model, this would be
+considered the spine). To determine which is which, the
 junction closest to the centroid of the character is found. The two longest
 segments attached to this junction are considered the limbs, the remaining
 segments are automatically part of the symmetry axis in case there are only one
@@ -243,18 +246,40 @@ are one or less segments available in here, segments from the scond group are
 used as well. This is repeated for every new junction node found on the symmetry
 axis, until the complete symmetry axis is found.
 
+Being able to discover the symmetry axis using the method above, a
+classification can be made about what the input model depicts. A very rough
+first classification step uses the limbs to determine the character class. These
+classes are:  a snake in case of zero junctions on the skeleton,
+a bird (with its wings or legs fold up) or fish (single fin in the back)in case
+of a single junction. The humanoid and quadruped skeletons fall into the next
+category of two junction characters. The last class is for 3 junction
+characters, under which humanoids with horns, quadrupeds with ears and birds
+(with wings, tail and legs) fall.
 
-Now that the symmetry axis can be 
-% Find centroid
-% Find closest junction to centroid. This will be on the symmetry axis.
-% We look at all segments of this junction. The longest ones are decomposed, the
-% shorter ones are considered part of the symmetry axis. If 2 remain, they are
-% immediately part of it. If 3 remain
+To distinguish between characters of each class, the placement and orientation
+of the junctions are checked, as well as the symmetry segment length. Because
+of the length of the complete list, we will only mention a few concrete
+characteristics the example looks for. For example, to distinguish between
+fish and birds in the 1 junction class, the placement of the junction is
+examined. If this junction is at the end of the symmetry axis, it is probably a
+fish fin. If the junction is midway, it can be the wings of a bird in case the
+angle betwee the symmetry segments is about 180 degrees, and else it will be the
+legs of a bird. In the 2 junction case, the thickness of
+limb is taken into account to distinguish between mammals and fish and birds.
+The distinction between bipeds and quadrupeds is made by looking at the normal
+vectors of the plane in which the symmetry segments fall for both junctions. If
+these normal vectors point the same way, it is considered a quadruped, if not,
+it is considered a biped. 
 
- 
+Using these rules and many others, we know the most likely character the model represents, and
+what part each symmetry segment is of the final skeleton. Based on this
+classification, an appopriate skeleton can be retrieved from a database full of
+template skeletons. Each segment of this skeleton is then mapped on the desired
+position of the curve skeleton. The junction position is done by keeping the
+same ratio to the segment endpoints as is the case in the template skeleton.
 
 
-
+%% It is a lot of work, but it only has to be done once.
 %
 %We clearly seesome approaches towar
 %It makes a very clear space in which the final skeleton will be embedded. It
@@ -272,33 +297,101 @@ to its speeds and performance.
 
 %Talk about how it works
 
-%talk about tome positive and negative approaches 
+%talk about some positive and negative approaches 
 
 
 \subsection{Evaluation}
-In this section we will talk about the results of each of the approaches with
-regards to time, generality and comparison towards other models.
+With the differences in methodology explained, we will now evaluate the
+approaches regarding their performance, quality, self-sufficieny, generality and
+further limitiations.
 
 \subsection{Performance}
+Speed is an important factor when it comes to the evaluation of the automatic rigging
+methods. Ideally, we would like the time in which the rigging takes place is
+faster than doing it by hand. \citep{paper1} has tested their algorithm on 16
+different models. The shortest time was 12.6 seconds for a model containing 19.001
+vertices. The longest time was 77.1 seconds for a model with 56.856 vertices.
 %All papers are rather fast in their approach, we could possibly write some more in depth 
 %sphere packing in paper 1 O(nb)
-% Paper 2 is very fast, because they only have to consider 
-\subsection{self-sufficiency}
-%paper 1 is very reliant on the pose in which the mesh is delivered. It also uses quick hacks like " the feet are at the bottom" to perform well.
+\citep{paper2} give the result of their algorithm applied to five different
+character models. Their shortest time is 3.6 seconds for a model containing
+16.834 faces and their longest time recorded is 15.1 seconds for a model
+containing 52.895 faces.
+\citep{paper3} only states the computation time for the model with biggest
+volume, which is 30 seconds.
+
+Although these performances can not be compaired side by side due to the test
+being ran in different circumstances, all of them were applied on everyday
+computers \footnote{Tests by \citep{paper1} were run on a 1.73 MHz Intel Core Duo
+with 1GB RAM.\\ Tests by \citep{paper2} were run on a 1.6GHz Intel Core Dual PC
+with 1GB RAM.\\
+% Talk about where exactly the bottlenecks are.
+% Paper 1: Discretization step. Although embedding time varies a lot due to the
+% application of AStar, which is exponential.
+% Paper 2: choice of first silhouette takes longest
+% paper 3: voxel reconstruction
+Test by \citep{paper3} were run on a 2.4-GHz Intel Core Dual PC with 1GB RAM.}
+, making all three methods seem to perform fast enough to be considered
+ a good automatic rigging method. The Intersting to note, is that the time
+ complexity of the algorithm of \citep{paper2} is in $O(N)$, while the other
+ approaches are in ($O(n^2)$), making their approach scale better with input
+ size.
+
 \subsection{Generality}
+Ideally we would like the rigging methods applied to be as general as possible,
+meaning that a single method could be used for all kinds of different input
+character, and have a dersired outcome.
+
+The method developed by \citep{paper1} has only been elaboratelty tested on the
+ embedding of a biped skeleton \footnote{they mention also an experiment with a quadruped
+skeleton and centaur skeleton embedding, but do not give any substantial information
+about the process, giving the impression it is not at all extensively tested.}
+template on different input character models. These
+character models r.
+Another interesting find is that objects that do not appear to be human-like can
+be rigged using this same approach. In the works of 
+
+Although we can say that the method of \citep{paper1} works fairly well for
+quite a big range of modelsi, not limited to clearly biped models, it is lacking for a big range of other characters
+as well. Most animals will not be succesfully rigged due to them being quadruped
+(or higher)
+in nature. In theory, the approach taken by \citep{paper1} could be extended for
+non-humanoid models, by instead of fitting a single template to the input model,
+try out all different possiblei skeleton
+embeddings. After trying out these different embeddings, the embedding with the
+smallest penalty can then be returned. This expansion to the algorithm, however,
+has its own problems. Firstly, is the issue of computation time. All those different embeddings can give a 
+huge overhead. Although we have seen that the most computation expensive part is
+the distance field calculation in the discretization step, the embedding takes
+at average one fifth of the complete computation time. Moreover, the
+embedding time is worst case exponential due to the use of AStar, making the.
+Another issue is the way the penalty calculation is performed. Although the 
+% The penalty calculation is quite 
+
+% Not a fault of the implementation of the authors, but inherent in the
+% embedding itself. We create 
+With this we can conclude that the approach of skeleton embedding by
+\citep{paper1} is limited in generality, and making it more general brings new
+problems, which are not easily fixable when maintaining the current approach.
+
+% Paper 1 can fit humanoid skeletons in non humanoid forms
 %Paper 1 can use new skeletons without needing threcalculate the weights, so making it more general, as well as self sufficient
-%It does however use 
+%It does howev er use 
 % even if paper 1 used more than a single skeleton throughout the whole embedding process, it has no criteria on which to fit the models.
 % It could possibly for all embeddings check the least penalized embedding, but in the current state this is not implemented.
 % Paper2 the generation of the curve skeleton from the medial axis only works in case the basic shape of the 
+%paper 2 mentions that it only works for 
+% Occlusion can happen even in the best of models, making their approach
+% problematic.
 
-% Problem: The detail of a skeleton migt be too high for a simpler input model.
+% Problem paper 3: The detail of a skeleton migt be too high for a simpler input model.
 % Slight 
 
-\subsection{Limitations}
-In case the user already has motion data applied to a skeleton,
-the extracted skeleton might make this mapping impossible.  Both skeleton
-extraction and embedding have some clear disadvantages, making it hard to 
+\subsection{self-sufficiency}
+%paper 1 is very reliant on the pose in which the mesh is delivered. It also uses quick hacks like " the feet are at the bottom" to perform well.
+%paper 3 only wants a logical position of the mesh
+
+
 \subsection{Robustness}
 %Paper 1 gives the ability to give hints in case of wrong classification. Such a
 %hint can be labeling the vertices like In case there are no vertices at the
@@ -309,8 +402,21 @@ extraction and embedding have some clear disadvantages, making it hard to
 
 % Paper 2 global search seems robust? in worst case it can always add its
 % neighbours to the mesh
+
+\subsection{Limitations}
+% In case of paper 2 no pre-existing motion capture data can be used
+% In case of paper 2
+
 \section{Usage}
-%The usage of paper 3 is quite clear. It 
+% Usase of paper 1 seems good for novice users
+
+%Use of paper 2 seems good for experience animators, who can more easily work
+%with the limitation of 
+
+
+
+%The usage of paper 3 could be a world wide database for animators, where they
+%can add skeletons in a specific 
 
 \section{Conclusion}
 Give a small summary about what is said
