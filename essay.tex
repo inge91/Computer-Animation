@@ -17,9 +17,10 @@
 In computer animation, skeletal animation is often used as an intuitive method
 for modeling characters. When applying skeletal animation, the created mesh
 model is provided with an underlying hierarchical skeleton, which is attached to
-the model, and specifies how the mesh can be deformed. The process of forming
+the model, that specifies how the mesh should be deformed in case of movement. The process of forming
 the underlying skeleton and fitting it to the model is called rigging, and is
-normally done by hand. 
+normally done by hand, using 3D modelling software, like for example Maya or
+Blender.
 %why is it used?
 
 %why is it problematic?
@@ -32,9 +33,11 @@ In this essay, we explore the concept of automatic rigging. As indicated by the
 name, the main idea of automatic rigging is that no outside intervention is
 needed to rig the model.
 %What are the papers that will be studied? What are their methods?
-Various papers are written about the subject. We will mostly limit ourselves to
-the works of \citep{paper1}, \citep{paper2} and \citep{paper3}, which have found
-diverse solution to the proposed problems, all with their own pros and cons.
+Various papers are written about the subject. We will limit ourselves to
+the works of Baran and Popovi\'{c}\citep{paper1}, Pan et al. \citep{paper2} and
+Pantuwong and Sugimoto \citep{paper3}, which have found
+diverse solution to the proposed problems, which nicely represent the current
+state of automatic rigging methods.
 %What are some criteria that should be dealt with?
 The automatic rigging methods proposed in the research papers need to meet
 certain criteria to be considered good. We will evaluate the research on the
@@ -42,27 +45,26 @@ following aspects which we find important, of which some are proposed by the
 researches themselves:
 
 \begin{itemize}
-\item Performance: The process should not take longer than manual rigging, and
-    preferably be faster than that.
-\item Generality: The process should be applicable on a great diversity of models.
-\item Self sufficiency: The process should minimize constraints on the end user.
-\item Robustness: In case modeling goes wrong, it is desirably easily fixable.
+    \item Performance: The process should not take longer than manual rigging, and
+        preferably be faster than that.
+    \item Generality: The process should be applicable on a great diversity of models.
+    \item Self sufficiency: The process should minimize constraints on the user.
 \end{itemize}
 These criteria will be our guideline while evaluating the proposed automatic rigging processes.
 
 %Small Summary of what will be found in the paper.
 The outline of this essay is as follows. First we will talk about the methods
 utilised by the different researches, to give a good understanding of their
-differences. Giving these differences, and their advantages and disadvantages on
-a high level, we will talk about their resulting performance giving the above
+differences and their motivation. Giving these differences, we will talk about
+their resulting performance giving the above
 mentioned evaluation points. After this, we discuss the specific applications to
-which each mentioned technique will be applied. Lastly, the conclusion follows.
+which each mentioned technique could be applied. Lastly, the conclusion follows.
 
 \section{Method}
-Rigging a character can be subdivided in two different stepss. The generation
-and placement of the skeleton inside the mesh, and the skinning part, where it
+Rigging a character can be subdivided in two consecutive steps. The generation
+and placement of the skeleton inside the model, and the skinning part, where it
 is specified how the mesh is deformed by the skeleton structure. In this section we will talk
-about the approach each research takes to this problem, and the motivation for
+about the approach each research takes, and the motivation for
 taking that specific approach.
 
 \subsection{Skeleton generation and placement}
@@ -70,18 +72,15 @@ The first part of the rigging pocess, generation and placement of the skeleton,
 is done by one of two distinct approaches, namely skeleton
 embedding and skeleton extraction. In the case of skeleton embedding, there
 is a fixed skeleton template ready to be embedded into a character model,
-using an optimisation function. Skeleton embedding is used by
-\citep{paper1}, in which a template for biped and quadruped skeletons is
+in some optimal way. Skeleton embedding is used by
+Baran Popvi\'{c}\citep{paper1}, in which a template for biped and quadruped skeletons is
 embedded in character models. In the case of skeleton extraction there
-are no template skeletons, but the skeleton is extracted using the
-topology of the character. Skeleton extraction is used by \citep{paper2},
-making a diverse set of character rigging a possibility.
+are no template skeletons, but the skeleton is extracted by evaluating the
+interipr of a model. Skeleton extraction is used by Pan et al.\citep{paper2},
+making a diverse set of character rigging possible.
+Pauntowing and Sugimoto \citep{paper3} use a combination of the two approaches.
 
-Both skeleton embedding and skeleton extraction have their advantages and
-disadvantages, which we will discuss next. We will discuss these aspects in
-the following sections, where we talk about the problems more in depth. 
-
-In \citep{paper3} both extraction and embedding are combined, in the attempt to    
+Next we will describe these approaches more in depth
 
 \subsubsection{Skeleton embedding using continuous optimization}
 In the case of skeleton embedding, there are some prerequisites. It requires pre
@@ -92,17 +91,17 @@ humanoid meshes, and a quadruped skeleton to be used on quadrupedal characters.
 In their approach the volume of the to be rigged mesh is discretized for
 computation efficiency and the final placement is determined using optimal
 margin optimisation.
- 
+
 To create an optimal embedding of the skeleton, first a discretization of the
 existing volume takes place, so not the complete space is considered for the
 skeleton placement. To this end the medial surface of the mesh is found, which
 contains the inner volume of where one would expect to find skeletal structure.
 The median surface is found by creating a distance field.
- 
+
 The final discretization is a graph in which each vertex is a candidate for a
 joint position of the skeleton and each edge is a candidate bone position
 belonging to the joints \citep{paper1}. 
- 
+
 To find a desirable fitting, undesired embeddings should be penalized. Possible
 aspects of such undesirable embeddings are short bones, improper orientation
 between joints, length difference in bones marked symmetric, bone chains
@@ -311,8 +310,10 @@ methods. Ideally, we would like the time in which the rigging takes place is
 faster than doing it by hand. \citep{paper1} has tested their algorithm on 16
 different models. The shortest time was 12.6 seconds for a model containing 19.001
 vertices. The longest time was 77.1 seconds for a model with 56.856 vertices.
-%All papers are rather fast in their approach, we could possibly write some more in depth 
-%sphere packing in paper 1 O(nb)
+The most time is spend on the preprocessing steps, due to the calculation of the
+distance field. The embedding itself takes about a fitfth of the complete
+computation time, but varies a lot.
+
 \citep{paper2} give the result of their algorithm applied to five different
 character models. Their shortest time is 3.6 seconds for a model containing
 16.834 faces and their longest time recorded is 15.1 seconds for a model
@@ -323,123 +324,212 @@ volume, which is 30 seconds.
 Although these performances can not be compaired side by side due to the test
 being ran in different circumstances, all of them were applied on everyday
 computers \footnote{Tests by \citep{paper1} were run on a 1.73 MHz Intel Core Duo
-with 1GB RAM.\\ Tests by \citep{paper2} were run on a 1.6GHz Intel Core Dual PC
-with 1GB RAM.\\
-% Talk about where exactly the bottlenecks are.
-% Paper 1: Discretization step. Although embedding time varies a lot due to the
-% application of AStar, which is exponential.
-% Paper 2: choice of first silhouette takes longest
-% paper 3: voxel reconstruction
+    with 1GB RAM.\\ Tests by \citep{paper2} were run on a 1.6GHz Intel Core Dual PC
+    with 1GB RAM.\\
 Test by \citep{paper3} were run on a 2.4-GHz Intel Core Dual PC with 1GB RAM.}
-, making all three methods seem to perform fast enough to be considered
- a good automatic rigging method. The Intersting to note, is that the time
- complexity of the algorithm of \citep{paper2} is in $O(N)$, while the other
- approaches are in ($O(n^2)$), making their approach scale better with input
- size.
+, making all three methods seem to perform fast enough to be preferred than
+manual rigging. 
+
+It is also interesting to note the time complexity of the different methods.
+The time complexity of the first algorithm falls in $O(N^2)$, due to the
+embedding being done using A-Star.
+The complexity of the algorithm of \citep{paper2} is in $O(N)$, with the bottle
+neck probably being finding the primary silhouette.
+The complexity of the algorithm of \citep{paper3} depends on the amount of
+voxels in the reconstruction, where complexity falls in $O(N^2)$, with N being the
+amount of voxels.
+From this we can observe that \citep{paper2} would probably scale the best to
+complexer model when it comes to computation time.
+
+\subsection{self-sufficiency}
+Ideally we would like the end user to have little
+to no extra work when using the rigging algorithm. Things like pose restrictions
+and user guidance throughout the rigging process should be at a minimum.
+
+In all three methods, the success of the rigging procedure is very reliant on
+the way the input model is presentend. For \citep{paper1} the input pose is
+heavily restricted. The pose should match the one of the template skeleton as
+much as possible, as the penalty function penalizes different orientation in the
+placement of the bones as that on the skeleton, and also expects the feet to be
+ad the bottom of the model.
+For \citep{paper2} the pose restriction is of importance due to two different
+reasons: occlusion and second-degree joint placement. The first means we would
+like an optimal projection in which no occlusion takes place. Because the median
+axis extraction is based on silhouettes, the skeleton will not properly
+represent the model. Take for example a model if a fist. If the medial axis is
+taken from the projection with the largest surface, the extracted axis would
+probably form an L-shaped curve, with no sign of the fingers.
+The second restriction has already been mentioned before, but forms a real problem if we
+think about limbs with high flexibility. To show the bendiness of the limbs it requires
+the complete limb being bend at every possible position, making for a
+non-intuitive modelling.
+
+Of the three approaches, the approach by \citep{paper3} has the least
+restriction regarding the input. The fact that this
+is not restricted is due the semantic interpretation that is made by the model,
+where an interpretation is made for each extrimity of the model, instead of
+assuming the feet are at the bottom. It does, however make some assumptions.
+For example, there should be a 90 degree angle between feet and ankles to
+determine the frontside and backside of a human, and a human should not be
+positioned like a quadruped else it will be classified as one.
+These might seem like obvious decisions when modeling, but these
+classification rules are not completely clear for outside users.
 
 \subsection{Generality}
 Ideally we would like the rigging methods applied to be as general as possible,
 meaning that a single method could be used for all kinds of different input
-character, and have a dersired outcome.
+character, and have a desired outcome.
 
-The method developed by \citep{paper1} has only been elaboratelty tested on the
- embedding of a biped skeleton \footnote{they mention also an experiment with a quadruped
+The method developed by \citep{paper1} has only been elaborately tested on the
+embedding of a biped skeleton \footnote{they mention also an experiment with a quadruped
 skeleton and centaur skeleton embedding, but do not give any substantial information
 about the process, giving the impression it is not at all extensively tested.}
-template on different input character models. These
-character models r.
-Another interesting find is that objects that do not appear to be human-like can
-be rigged using this same approach. In the works of 
+template on sixteen different input character models. Most of these models were
+correctly rigged, only model 7, 10 and 13. did not get the desired rigging. 
+% Say something about wrongl classified thingies
+Also non-typical humanoid shapes have been rigged by \citep{paper1} and gave
+succesful results.
 
 Although we can say that the method of \citep{paper1} works fairly well for
-quite a big range of modelsi, not limited to clearly biped models, it is lacking for a big range of other characters
+quite a big range of models, not limited to clearly biped models, it is lacking for a big range of other characters
 as well. Most animals will not be succesfully rigged due to them being quadruped
 (or higher)
 in nature. In theory, the approach taken by \citep{paper1} could be extended for
 non-humanoid models, by instead of fitting a single template to the input model,
-try out all different possiblei skeleton
+try out all different possible skeleton
 embeddings. After trying out these different embeddings, the embedding with the
 smallest penalty can then be returned. This expansion to the algorithm, however,
 has its own problems. Firstly, is the issue of computation time. All those different embeddings can give a 
 huge overhead. Although we have seen that the most computation expensive part is
 the distance field calculation in the discretization step, the embedding takes
 at average one fifth of the complete computation time. Moreover, the
-embedding time is worst case exponential due to the use of AStar, making the.
-Another issue is the way the penalty calculation is performed. Although the 
-% The penalty calculation is quite 
+embedding time is worst case exponential due to the way A* is implemented, 
+and it is hard to predict the actual running time for each case.
+Another, all be it small, issue is the current penalty function. Although most parts of the penalty
+function are straightforward, and applicable to different kind of template
+skeletons, the penalty for small bones makes the embedding of tail-having
+creatures, or snakes, or octopi, or just any character having an extrimity
+consisting of many small bones. This could ofcourse be added by the constraints
+by ignoring size of bones labeled \emph{tail}, but it is something that should
+be mentioned.
+A last point that should be mentioned is a problem that can not be fixed, due to
+the skeleton ambedding approach, which is that the best possible fitting
+skeleton might still not be the desired skeleton. As we have stated before, the
+method of embedding is limited to the skeletons that were fed the to algorithm
+beforehand, making it impossible to create new fantastical creations without
+the user having to do half the rigging process herself.
 
-% Not a fault of the implementation of the authors, but inherent in the
-% embedding itself. We create 
-With this we can conclude that the approach of skeleton embedding by
-\citep{paper1} is limited in generality, and making it more general brings new
-problems, which are not easily fixable when maintaining the current approach.
+In the works of \citep{paper2} the problem of needing pre-existing templates may
+not be present, but this does not mean that every automatic rigging of a model will have a
+desirable outcome. Firstly, using the medial axis as strict guideline for the
+final skeleton makes the assumption that the models is constructed out of
+elementes that approximate cyllindrical shapes. If this is not the case, the skeleton will not be centered,
+making the final mesh deformation using the skeleton look off. The
+authors themselves mention this problem occuring in case of rigging for example a \emph{rock
+with grotesque shape}. This might not seem like the most convincing example, as
+skeletal animation is not something one would normally think about when
+animating a rock, but the problem holds for other examples as well. For example,
+a model of a cartoonishly muscular man in flexing pose will end up having
+non-straight curves in its arm that follow the shape of the muscle, instead of
+the natural bone placement. The biggest disadvantage here is that not a very
+good estimate can be made in advance if an input model will be correctly rigged
+or not.
+Nonetheless, there are a wide range of character for which this approach to
+rigging can habe a very beneficial effect, in their tests bipeds, quadrupeds,
+octopeds and a model of a hand were all sucessfully rigged.
 
-% Paper 1 can fit humanoid skeletons in non humanoid forms
-%Paper 1 can use new skeletons without needing threcalculate the weights, so making it more general, as well as self sufficient
-%It does howev er use 
-% even if paper 1 used more than a single skeleton throughout the whole embedding process, it has no criteria on which to fit the models.
-% It could possibly for all embeddings check the least penalized embedding, but in the current state this is not implemented.
-% Paper2 the generation of the curve skeleton from the medial axis only works in case the basic shape of the 
-%paper 2 mentions that it only works for 
-% Occlusion can happen even in the best of models, making their approach
-% problematic.
+Due to the combination of embedding and extraction in the approach by \citep{paper3},
+we see some of the above issues arise for this specific approach as well.
+The generality of this rigging approach is again limited to the template
+skeletons available in the database, and the way the curve skeleton is
+extracted.
+An advantage in comparison with the method in \citep{paper1} is that the
+algorithm can select from different skeletons to choose the appropriate one,
+with often good results. The results are shown of over 12 different models, all
+of different character classes, which
+all were correctly classified and rigged. 
 
-% Problem paper 3: The detail of a skeleton migt be too high for a simpler input model.
-% Slight 
+This classification procedure, however, does not work by applying 
+all possible embeddings and returning which works
+best, but chooses one on previously discusses criteria. These criteria are
+however kind of crudely stated, and could cause misclassification in the less
+obvious cases. This could possibly have better effect when using a penilization
+function as in the case of \citep{paper1}, where every embedding is tried out
+and the best one is returned. This is shown in the case of their embedding of
+case 8. This goes wrong for \citep{paper} due to the hat being interpreted as
+horns. This specific misclassification is not too problematic,
+but this same issue can arise for the anatomical information
+extraction. One of the rules for the anatomical interpretation of humanoid
+characters with horns or ears is that the shortest symmetry segments will be
+considered the ears or horns .This will go wrong in the case of a
+rabbit like-figure, whose ears might be longer than any other extremity.
 
-\subsection{self-sufficiency}
-%paper 1 is very reliant on the pose in which the mesh is delivered. It also uses quick hacks like " the feet are at the bottom" to perform well.
 %paper 3 only wants a logical position of the mesh
 
 
-\subsection{Robustness}
-%Paper 1 gives the ability to give hints in case of wrong classification. Such a
-%hint can be labeling the vertices like In case there are no vertices at the
-%position that are desired to map the skeleton on, there is no way of saving the
-%embedding. For example, in case the mesh has rather thin arms, and so the arms
-%are not fitted correctly, there is no way of changing the layout, making user
-%changes very limited because of the discretization step.
-
-% Paper 2 global search seems robust? in worst case it can always add its
-% neighbours to the mesh
-
-\subsection{Limitations}
-% In case of paper 2 no pre-existing motion capture data can be used
 % In case of paper 2
 
-\section{Usage}
-% Usase of paper 1 seems good for novice users
+\section{Application}
+The three applications of automatic rigging that we have studied are all to some
+extent viable options for easy rigging, but due to their qualitative differences, 
+the domains in which they can be best applied differ quite a lot.
+Here we will discuss some practical applications that we envision for these
+different methods.
+% Usase of paper 1 seems good for novice use
+%Paper 1 is limited to biped characters, but can deal with very cartoonish
+As we have seen in the evaluation, \citep{paper1} is currently limited to biped
+character rigging, but can correctly rig cartoonischi looking  characters. In addition, it can be
+corrected by an end user that does not really need to know much about the 3d
+modelling process. Therefore, it would be interesting to integrate this method into
+frameworks where 3D models are created from 2D drawings and skechtes. Some
+previous research with promising results has already been done in this topic
+\citep{paper4}, but the rigging part has not yet been integrated. If this automatic rigging
+algorithm is used, where the template skeleton is equipped with some basic
+animations, a 2D artist of any kind could easily create its own 3D model to
+deploy in movies or games as long as it is biped and has a pose similar to that
+of the skeleton.
 
-%Use of paper 2 seems good for experience animators, who can more easily work
-%with the limitation of 
+Due to the method of \citep{paper2} setting heavy restrictions on input pose,
+not having a clear boundary of what can be correctly rigged, and not
+having an easy way to correct the final rendering without 3d modelling software
+or limited knowledge, its use seems strictly limited to experts in the field of 3D
+modelling, that would like a less cumbersome method of rigging. This method
+could save a lot of time for more demanding characters, like spiders or other
+character with many extremities.
 
-
-
-%The usage of paper 3 could be a world wide database for animators, where they
-%can add skeletons in a specific 
+We have seen that the approach of \citep{paper3} works best for realistic
+models, but that it still is restricted due to the template skeleton that needs
+to be available. It would be great if the database could be easily expanded upon
 
 \section{Conclusion}
-Give a small summary about what is said
+In this essay we discussed skeletal animation as an important method for
+animating character models. The way such models are rigged can be a rather
+cumbersome task, and daunting for beginners in the field of animation. A lot of
+research has been done towards automatic rigging algorithms. We looked at three
+different methods. A skeletal embedding approach by Baran and Popovi\'{c} \citep{paper1}, a skeletal
+extraction approach by Pan et al. \citep{paper2} and a method by Pantuwong and
+Sugimot \citep{paper2} that
+combines the two methods. First we gave some motivational inside for each
+approach and explained what their method entailed. After this we evaluated each
+approach on three different aspects that seem important for the algorithm; speed
+performance, generality and self-sufficiency. 
 
-What can we conclude about the 3 papers?  All 3 papers seem to have a slightly
-different goal wanting to be reached.Paper 3 seems to focus on realistic models
-the way their algorithm works (For example, thin legged creatures must be birds,
-and so cannot be humans) but it does restrict creative freedom. In paper 1 this
-creative freedom is very important to the researchers, but the final application
-is very limited, with their a
+We saw that the skeleton embedding approach by \citep{paper1} currently has only
+been extensively tested on biped meshes, and has limited problems with rigging a
+wide variety of these models, all which could easily be explained due to their
+applied method. Due to the algorithms speed and possibility to apply correction
+without needing any knowledge of modelling or rigging, we envision this method
+as part of systems that bring 3D modelling to 2D artists that have no prior
+knowledge of 3D modelling.
+The skeletal extraction approach by \citep{paper2}, due to it not being restricted to provided
+template skeleton, has the most freedom in the kind of models it could rig, but
+makes a lot of restrictions on the incoming modeller, making the use more
+constraint. It is also not directly clear what can and cannot directly be
+rigged, making it at best a tool for expert modellers. 
 
-What do I think is best?
-To me, paper 2 seems the most promising in the way it works, as there is no
-limitation as to what kind of creatures it can make. A big problem. however, is
-the creation of the joint positions. Both relying on the model position showing
-angles at every real joint position as well as creating a database of stored
-joints is problematic, the first because it relies on the end users for creating
-a pose, the latter because it loses the generality it had in the first place
-(like we see in the works of paper 3). In my opinion, this part could best be
-solved by another solution entirely. In my opinion the first solution is a
-better one as the second.
+The combined approah could rig a wide range of diverse characters, but is mostly
+limited to models with realistic proportions, and didn
 
-do I have some views myself on how this could be improved?
 
 \bibliographystyle{plain}
 \bibliography{references}
