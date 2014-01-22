@@ -160,8 +160,7 @@ The learning procedure itself is conducted using Nelder-Mead. It starts off with
 random starting values for the weights, which are evaluated using equation
 \ref{eq:max}, which should be maximized on a training set of hand classified
 character embeddings. 
-Because Nelder-Mead can get stuck in
-local minima, this is run for multiple instances with different initial weights.
+Because Nelder-Mead can get stuck in local minima, this is run for multiple instances with different initial weights.
 
 Now that we have a way to penalized bad embeddings, the optimal embedding can
  be calculated. To reduce the search space somewhat more, all degree two joints
@@ -331,19 +330,6 @@ classification, an appropriate skeleton can be retrieved from a database full of
 template skeletons. Each segment of this skeleton is then mapped on the desired
 position of the curve skeleton. The junction position is done by keeping the
 same ratio to the segment endpoints as is the case in the template skeleton.
-
-
-\subsection{Skinning}
-To pose the model using the skeleton, it still has to be decided how the model
-is deformed by the moving skeleton. This process is called skinning. For the
-skinning part there is not much diversity between the different researches. All
-three apply a method called Linear Blend Skinning, which is a well established skinning method due
-to its speeds and performance.
-
-%Talk about how it works
-
-%talk about some positive and negative approaches 
-
 
 \subsection{Evaluation}
 With the differences in methodology explained, we will now evaluate the
