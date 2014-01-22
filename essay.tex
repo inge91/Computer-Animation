@@ -1,5 +1,6 @@
 \documentclass{article}
 \usepackage[utf8]{inputenc}
+\usepackage{amsmath}
 
 \title{Computer Animation Essay\\ Automatic Rigging Methods}
 \author{Inge Becht\\ 4157281}
@@ -24,7 +25,7 @@ Blender.
 %why is it used?
 
 %why is it problematic?
-Rigging by hand, however, can be a rather daunting task for beginning 3d
+Rigging by hand, however, can be a rather daunting task for beginning 3D
 modelers \citep{paper1}, but also a time consuming job for expert animators, as
 each model needs to be rigged separately, even though their anatomy might be
 quite a like.
@@ -68,64 +69,117 @@ about the approach each research takes, and the motivation for
 taking that specific approach.
 
 \subsection{Skeleton generation and placement}
-The first part of the rigging pocess, generation and placement of the skeleton, 
+The first part of the rigging process, generation and placement of the skeleton, 
 is done by one of two distinct approaches, namely skeleton
 embedding and skeleton extraction. In the case of skeleton embedding, there
 is a fixed skeleton template ready to be embedded into a character model,
 in some optimal way. Skeleton embedding is used by
-Baran Popvi\'{c}\citep{paper1}, in which a template for biped and quadruped skeletons is
+Baran and Popovi\'{c}\citep{paper1}, in which a template for biped and quadruped skeletons is
 embedded in character models. In the case of skeleton extraction there
 are no template skeletons, but the skeleton is extracted by evaluating the
-interipr of a model. Skeleton extraction is used by Pan et al.\citep{paper2},
+interior of a model. Skeleton extraction is used by Pan et al.\citep{paper2},
 making a diverse set of character rigging possible.
 Pauntowing and Sugimoto \citep{paper3} use a combination of the two approaches.
 
-Next we will describe these approaches more in depth
+Next we will give a more in depth explanation of each approach.
 
 \subsubsection{Skeleton embedding using continuous optimization}
-In the case of skeleton embedding, there are some prerequisites. It requires pre
-made skeletons to be embedded into the mesh, and a function that determines the
-optimal way to embed the skeleton. 
-The authors of \citep{paper1} used a single biped skeleton to be fitted onto
+In the case of skeleton embedding we require pre-made skeletons to be embedded into the mesh,
+and a function that determines the optimal way to embed the skeleton.
+Baran and Popovi\'{c} used a single biped skeleton to be fitted onto
 humanoid meshes, and a quadruped skeleton to be used on quadrupedal characters.
 In their approach the volume of the to be rigged mesh is discretized for
-computation efficiency and the final placement is determined using optimal
-margin optimisation.
+computation efficiency and the final placement is determined using a method
+called optimal margin optimisation.
 
-To create an optimal embedding of the skeleton, first a discretization of the
+To embed the skeleton in an optimal way, first a discretization of the
 existing volume takes place, so not the complete space is considered for the
-skeleton placement. To this end the medial surface of the mesh is found, which
-contains the inner volume of where one would expect to find skeletal structure.
-The median surface is found by creating a distance field.
+skeleton placement. To this end, the medial surface of the mesh is found. The
+medial surface is like the medial axis, but for a 3D space. A point in the space
+belongs to the medial axis, when it has more than one closest points on the
+model surface. Logically, The medial surface consists of points centered in the model,
+where one would expect to find the find skeletal structure. Figure
+\ref{fig:discretization}
+ shows the medial surface on the left.
 
-The final discretization is a graph in which each vertex is a candidate for a
-joint position of the skeleton and each edge is a candidate bone position
-belonging to the joints \citep{paper1}. 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{discretization_step.jpg}
+    \caption{Discretization steps. Left shows the medial surface, middle shows
+    the sphere packing, right shows the graph.}
+    \label{fig:discretization}
+\end{figure}
 
-To find a desirable fitting, undesired embeddings should be penalized. Possible
+Ideally, we would like to be the final embedding space more discrete than the
+medial surface, as this still contains a lot of points where we would not want a
+joint to be placed. Therefore, we create a final graph using a method very
+similar to sphere packing.
+Each point on the medial surface, starting with the one furthest from the mesh,
+adds a sphere with that point as the center and with the radius the shortest distance
+to the mesh. A sphere is not added if it contains the center of another
+sphere\footnote{This is different than sphere packing, as spheres in that case
+do not intersect at all.}. Figure \ref{fig:discretization} shows the sphere
+packing in the middle image.
+
+The final graph is then constructed, sphere
+centers become vertices and edges are placed between intersecting spheres, or
+in case this edge is essential (which is the case if the vertices are Gabriel
+neighbours and are deep enough in the mesh).
+Figure \ref{fig:discretization} shows the final graph on the
+right. Each vertex in the graph is a potential position for the joints to be
+embedded, and each edge is a potential connection point between joints.
+
+Now that de space is discretized, the template skeleton must be somehow embedded
+into this graph. To find a desirable fitting, undesired embeddings should be penalized. Possible
 aspects of such undesirable embeddings are short bones, improper orientation
-between joints, length difference in bones marked symmetric, bone chains
-sharing vertices, feet away from the bottom, zero-length bone chains, improper
-orientations of bones and joints close together in the graph, but far away in
+between joints, length difference in bones marked symmetric\footnote{markings
+are little labels given to the skeleton that help decide where to put each
+extremity in the graph.}, bone chains
+sharing vertices (there should not be loops in the skeleton), bones marked feet away from the
+bottom, zero-length bone chains, improper
+orientations of bones, and joints close together in the graph, but far away in
 skeleton\citep{paper1}. To find the optimal weight for each penalty function, a
-maximum margin linear classifier is learned.  This approach is called maximum
-margin because it tries to maximize the margin between the best bad and best
-good embedding (as labeled in the training set), so that there is a clear
-embedding of correct and incorrect classifications. The learning procedure
-itself is conducted using Nelder-Mead{explain more in depth how}.
+maximum margin linear classifier is learned. 
+This approach is called a maximum margin classifier because it tries 
+to maximize the margin between the best bad and best
+good embedding (as labeled in the training set):
 
-The optimal embedding of the skeleton is now calculated using A*. To reduce the
-search space somewhat more, all second degree joints are removed from the
-skeleton to fit, giving a simplified skeleton to be fitted. By using a priority
-queue and extending the skeleton one bone at a time, the algorithm stops in case
-one embedding is completed, as it is assured the optimal one.
+\begin{align}
+    \min^n_{i = 1} \Gamma^{T} \textbf{q}_i - \min^m_{i = 1} \Gamma^{T}
+    \textbf{q}_i  \label{eq:max}
+\end{align}
+
+Where $\textbf{p}$ and $\textbf{q}$ are feature vectors(of the penalties
+mentioned earlier) of good and bad
+embeddings respectively, $\Gamma$ is the vector containing weights and n and m
+are the number of good and bad embeddings.
+Ideally we would like the choice of $\Gamma$ so that \ref{eq:max} is maximized, 
+as this creates a clear division between embedding of correct and incorrect classifications. 
+
+The learning procedure itself is conducted using Nelder-Mead. It starts off with
+random starting values for the weights, which are evaluated using equation
+\ref{eq:max}, which should be maximized on a training set of hand classified
+character embeddings. 
+Because Nelder-Mead can get stuck in
+local minima, this is run for multiple instances with different initial weights.
+
+Now that we have a way to penalized bad embeddings, the optimal embedding can
+ be calculated. To reduce the search space somewhat more, all degree two joints
+ (like knees and elbows) are removed from the
+skeleton to fit, giving a simplified skeleton to be fitted. The search for the
+optimal embedding is done by implementing A*, By using a priority
+queue and extending the skeleton one bone at a time. The score of each partial
+embedding is the sum of the penalty between each two linked joints in the
+partial embedding added to a term that starts with the penalty of the first two
+joints added to the penalty of the first three joints and so on until the
+last embedded joint. The algorithm stops in case
+one embedding is completed, which is assured the optimal one.
 
 When the final fit is found, the merged joints are reinserted by breaking up the
-found edges in proportion to the original skeleton , and a final optimisation
+found edges in proportion to the original skeleton, and a final optimisation
 step takes place to make sure these joints are nicely positioned inside the
 mesh, the bones are of decent length (with regards to the skeleton we started
 out with) and the orientation of the bones are as desired.
-
 
 \subsubsection{Skeleton extraction using 3D silhouettes} Skeleton embedding
 might seem like a rather straightforward choice for solving the automatic
@@ -138,16 +192,13 @@ by the users.
 
 The use of skeleton extraction circumvents the issue of needing a predefined
 skeleton, by looking for the skeletal property within the mesh self. Pan et al.
-\citep{paper2} take this skeletal approach, which will be explained next.
+\citep{paper2} take this skeletal approach.
 
 % what is the medial axis and why is it used
 To extract the skeleton from a mesh, Pan et al. use the medial axis as a
-guideline for finding the final animation skeleton. The medial axis consists of all points that have more than one
-closest point on the boundary of the object. In other words, it consists of
-point within the model that are centered with regards to the boundary of the
-mesh. In case the medial axis is determined for a three dimensional shape, it most likely
-is a surface (called the medial surface, as we have seen before in the case of
-paper \citep{paper1}) but for a 2D object the medial axis will consists of
+guideline for finding the final animation skeleton.
+We saw in the case of Baran and Popovi\'{c} that all points in the mesh that had
+more than 1 closest point to the mesh are surfaces, but for a 2D object the medial axis will consists of
 curves. These curves can be quite straightforwardly converted to a skeleton, as
 it gives the exact centered placement for the bones within the mesh. Pan et al.
 use 3D silhouettes, two dimensional projections with the depth information stored along
@@ -159,8 +210,13 @@ projection in which there is as little occlusion as possible, so that when
 determining the medial axis, all parts of the character model are considered.
 The optimal projection is thus considered the projection with the maximum
 surface area. When this projection is determined, a global and a local search
-are used to determine the 3D silhouette. In the global search the vertices
-making up the 3D silhouette are determined. 
+are used to determine the 3D silhouette. 
+
+In the global search the vertices making up the 3D silhouette are determined. 
+The first vertex that is selected is the most top one in the silhouette and
+every new selected vertex is found by looking in the counter clockwise
+direction within a radius, whose size is determined by the maximal distance with
+which the current vertex is connected in the mesh. 
 
 When the vertices belonging to the 3D silhouette are found using global search,
 it is very likely these points are not connected in the mesh, due to
@@ -170,28 +226,29 @@ vertices to the 3D silhouette vertices. Adding these vertices will add more
 detail to the medial axis. %FIXME is this really the case?
 
 After the 3D silhouette is found, the medial axis can be determined. This is
-achieved by discretizing the silhouette in triangles, using Delaunay
+achieved by filling the silhouette with triangles, using Delaunay
 Triangulation. For each triangle edge that is not on the boundary of the
 silhouette, the midpoint is calculated. These points are then connected using
 linear interpolation, creating one or multiple curves within the mesh. By
 considering only the inner edges of the triangles, it is assured that none of
 the curves make contact with the mesh boundary, which is desirable for the final
-skeleton.
+skeleton, as it will be well centered within the mesh.
 
-Because the application of the delaunay triangulation did not take the depth
-into account, the medial axis calculation might be slightly off center. This is fixed
+Because the silhouette contains vertices of different depth, the current curve
+skeleton will not be centered in the plane that was ignored by projection. This
+causes the medial axis calculation to be slightly off center. This is fixed
 by looking for a perpendicular projection to the one used for the initial
 silhouette creation. This is done for every curve by finding the projection
 vector that is orthogonal on both the curve and the previous projection vector.
 For this new projection the 3D silhouette is determined the same way as before.
-The final refinement of the curve skeleton is  every element of the curve
+The final refinement of the curve skeleton is for every element of the curve
 finding the four nearest neighbours on the second silhouette, and then
 interpolating between these four points.
 
 When the medial axis is refined, the different curves need to be combined to a
 single skeleton. All endpoints between each curve is considered a joint, and are
 connected together. These, however are not all the joints in the skeleton only
-the junctions between different limbs. To determine where the second degree
+the junctions between different limbs. To determine where the degree two
 joints should be positioned in this skeleton, the authors look at the degree of
 bending in the extracted curve. If the bending angle between positions on the curve is 
 significant (which in this research means more than 18 degrees of bending), a
@@ -214,7 +271,7 @@ judgement can be made about what kind of character is being depicted by the
 model.
 The best-fitting template-skeleton can then be embedded in the model my aligning it with the curve skeleton..
 
-The researchers use a curve extraction method called pseudonormal vector fields
+The researchers use a curve extraction method called pseudo normal vector fields
 which has been a result of earlier results, but any curve extractor that uses
 distance fields could be used (so the method in \citep{paper2} is not ideal to
 apply in this case). After the curve skeleton is extracted, the
@@ -224,8 +281,6 @@ are limbs that should be paired together. So in case of a human, the arms would
 be symmetry segments, and the legs would be symmetry segments. In case there are
 two different junctions whose difference in distance is small to any endpoint of
 the curve, the two junctions are merged together.
-% They do not tlak about normalizing the size of the models, so i do not see how
-% a single treshold could ever work
 
 Now that we are certain that symmetric segments of the model come
 together in junction points, this can be exploited towards determining what kind
@@ -238,10 +293,10 @@ junction closest to the centroid of the character is found. The two longest
 segments attached to this junction are considered the limbs, the remaining
 segments are automatically part of the symmetry axis in case there are only one
 or two segments at the junction left. In case there are more than two, the
-remaining segments are first devided in groups that end up in other junction
+remaining segments are first divided in groups that end up in other junction
 points, and others that end up in an extremity. The symmetry axis segments are
 then segments from the first group that make the biggest angle. In case there
-are one or less segments available in here, segments from the scond group are
+are one or less segments available in here, segments from the second group are
 used as well. This is repeated for every new junction node found on the symmetry
 axis, until the complete symmetry axis is found.
 
@@ -262,7 +317,7 @@ characteristics the example looks for. For example, to distinguish between
 fish and birds in the 1 junction class, the placement of the junction is
 examined. If this junction is at the end of the symmetry axis, it is probably a
 fish fin. If the junction is midway, it can be the wings of a bird in case the
-angle betwee the symmetry segments is about 180 degrees, and else it will be the
+angle between the symmetry segments is about 180 degrees, and else it will be the
 legs of a bird. In the 2 junction case, the thickness of
 limb is taken into account to distinguish between mammals and fish and birds.
 The distinction between bipeds and quadrupeds is made by looking at the normal
@@ -272,20 +327,11 @@ it is considered a biped.
 
 Using these rules and many others, we know the most likely character the model represents, and
 what part each symmetry segment is of the final skeleton. Based on this
-classification, an appopriate skeleton can be retrieved from a database full of
+classification, an appropriate skeleton can be retrieved from a database full of
 template skeletons. Each segment of this skeleton is then mapped on the desired
 position of the curve skeleton. The junction position is done by keeping the
 same ratio to the segment endpoints as is the case in the template skeleton.
 
-
-%% It is a lot of work, but it only has to be done once.
-%
-%We clearly seesome approaches towar
-%It makes a very clear space in which the final skeleton will be embedded. It
-%also has a better selection procedure for choosing the to be fitted skeleton
-%that this approach taken by \citep{paper3} does not remove all
-%disadvantages of embedding and extraction. In the case of 
-%It also has some limitations, which we will discuss in the evaluation.
 
 \subsection{Skinning}
 To pose the model using the skeleton, it still has to be decided how the model
@@ -301,8 +347,8 @@ to its speeds and performance.
 
 \subsection{Evaluation}
 With the differences in methodology explained, we will now evaluate the
-approaches regarding their performance, quality, self-sufficieny, generality and
-further limitiations.
+approaches regarding their performance, quality, self-sufficient, generality and
+further limitations.
 
 \subsection{Performance}
 Speed is an important factor when it comes to the evaluation of the automatic rigging
@@ -311,7 +357,7 @@ faster than doing it by hand. \citep{paper1} has tested their algorithm on 16
 different models. The shortest time was 12.6 seconds for a model containing 19.001
 vertices. The longest time was 77.1 seconds for a model with 56.856 vertices.
 The most time is spend on the preprocessing steps, due to the calculation of the
-distance field. The embedding itself takes about a fitfth of the complete
+distance field. The embedding itself takes about a fifth of the complete
 computation time, but varies a lot.
 
 \citep{paper2} give the result of their algorithm applied to five different
@@ -321,7 +367,7 @@ containing 52.895 faces.
 \citep{paper3} only states the computation time for the model with biggest
 volume, which is 30 seconds.
 
-Although these performances can not be compaired side by side due to the test
+Although these performances can not be compared side by side due to the test
 being ran in different circumstances, all of them were applied on everyday
 computers \footnote{Tests by \citep{paper1} were run on a 1.73 MHz Intel Core Duo
     with 1GB RAM.\\ Tests by \citep{paper2} were run on a 1.6GHz Intel Core Dual PC
@@ -347,7 +393,7 @@ to no extra work when using the rigging algorithm. Things like pose restrictions
 and user guidance throughout the rigging process should be at a minimum.
 
 In all three methods, the success of the rigging procedure is very reliant on
-the way the input model is presentend. For \citep{paper1} the input pose is
+the way the input model is presented. For \citep{paper1} the input pose is
 heavily restricted. The pose should match the one of the template skeleton as
 much as possible, as the penalty function penalizes different orientation in the
 placement of the bones as that on the skeleton, and also expects the feet to be
@@ -360,17 +406,17 @@ represent the model. Take for example a model if a fist. If the medial axis is
 taken from the projection with the largest surface, the extracted axis would
 probably form an L-shaped curve, with no sign of the fingers.
 The second restriction has already been mentioned before, but forms a real problem if we
-think about limbs with high flexibility. To show the bendiness of the limbs it requires
+think about limbs with high flexibility. To show the bending properties of the limbs it requires
 the complete limb being bend at every possible position, making for a
-non-intuitive modelling.
+non-intuitive modelling (like, for example, not putting bipeds into the T-Pose).
 
 Of the three approaches, the approach by \citep{paper3} has the least
 restriction regarding the input. The fact that this
 is not restricted is due the semantic interpretation that is made by the model,
-where an interpretation is made for each extrimity of the model, instead of
+where an interpretation is made for each extremity of the model, instead of
 assuming the feet are at the bottom. It does, however make some assumptions.
 For example, there should be a 90 degree angle between feet and ankles to
-determine the frontside and backside of a human, and a human should not be
+determine the front side and backside of a human, and a human should not be
 positioned like a quadruped else it will be classified as one.
 These might seem like obvious decisions when modeling, but these
 classification rules are not completely clear for outside users.
@@ -384,15 +430,24 @@ The method developed by \citep{paper1} has only been elaborately tested on the
 embedding of a biped skeleton \footnote{they mention also an experiment with a quadruped
 skeleton and centaur skeleton embedding, but do not give any substantial information
 about the process, giving the impression it is not at all extensively tested.}
-template on sixteen different input character models. Most of these models were
-correctly rigged, only model 7, 10 and 13. did not get the desired rigging. 
-% Say something about wrongl classified thingies
-Also non-typical humanoid shapes have been rigged by \citep{paper1} and gave
-succesful results.
+template on sixteen different input character models, as shown in figure
+\ref{fig:results1.png}. Most of these models were
+correctly rigged, only model 7, 10 and 13 did not get the desired rigging. These
+however, could be corrected by the user giving a single hint of a correct joint
+placement.
+
+Also non-typical biped shapes, like for example a donut, have been rigged by \citep{paper1} and gave
+successful results.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{embedding_result.jpg}
+    \caption{Results of \citep{paper1}}
+    \label{fig:results1.png}
+\end{figure}
 
 Although we can say that the method of \citep{paper1} works fairly well for
 quite a big range of models, not limited to clearly biped models, it is lacking for a big range of other characters
-as well. Most animals will not be succesfully rigged due to them being quadruped
+as well. Most animals will not be successfully rigged due to them being quadruped
 (or higher)
 in nature. In theory, the approach taken by \citep{paper1} could be extended for
 non-humanoid models, by instead of fitting a single template to the input model,
@@ -405,15 +460,16 @@ the distance field calculation in the discretization step, the embedding takes
 at average one fifth of the complete computation time. Moreover, the
 embedding time is worst case exponential due to the way A* is implemented, 
 and it is hard to predict the actual running time for each case.
-Another, all be it small, issue is the current penalty function. Although most parts of the penalty
+Another issue, all be it small, is the current penalty function. Although most parts of the penalty
 function are straightforward, and applicable to different kind of template
 skeletons, the penalty for small bones makes the embedding of tail-having
-creatures, or snakes, or octopi, or just any character having an extrimity
-consisting of many small bones. This could ofcourse be added by the constraints
-by ignoring size of bones labeled \emph{tail}, but it is something that should
-be mentioned.
+creatures, or snakes, or octopi, or just any character having an extremity
+consisting of many small bones problematic. This could of course be added by the constraints
+by ignoring size of bones labeled \emph{tail}, but in its current form this can
+be problematic, and for that reason should be mentioned. In case the penalty
+function is not changed, nothing has to be relearned, which is a plus.
 A last point that should be mentioned is a problem that can not be fixed, due to
-the skeleton ambedding approach, which is that the best possible fitting
+the skeleton embedding approach, which is that the best possible fitting
 skeleton might still not be the desired skeleton. As we have stated before, the
 method of embedding is limited to the skeletons that were fed the to algorithm
 beforehand, making it impossible to create new fantastical creations without
@@ -423,9 +479,9 @@ In the works of \citep{paper2} the problem of needing pre-existing templates may
 not be present, but this does not mean that every automatic rigging of a model will have a
 desirable outcome. Firstly, using the medial axis as strict guideline for the
 final skeleton makes the assumption that the models is constructed out of
-elementes that approximate cyllindrical shapes. If this is not the case, the skeleton will not be centered,
+elements that approximate cylindrical shapes. If this is not the case, the skeleton will not be centered,
 making the final mesh deformation using the skeleton look off. The
-authors themselves mention this problem occuring in case of rigging for example a \emph{rock
+authors themselves mention this problem occurring in case of rigging for example a \emph{rock
 with grotesque shape}. This might not seem like the most convincing example, as
 skeletal animation is not something one would normally think about when
 animating a rock, but the problem holds for other examples as well. For example,
@@ -435,8 +491,8 @@ the natural bone placement. The biggest disadvantage here is that not a very
 good estimate can be made in advance if an input model will be correctly rigged
 or not.
 Nonetheless, there are a wide range of character for which this approach to
-rigging can habe a very beneficial effect, in their tests bipeds, quadrupeds,
-octopeds and a model of a hand were all sucessfully rigged.
+rigging can have a very beneficial effect, in their tests bipeds, quadrupeds,
+octopeds and a model of a hand were all successfully rigged.
 
 Due to the combination of embedding and extraction in the approach by \citep{paper3},
 we see some of the above issues arise for this specific approach as well.
@@ -456,7 +512,7 @@ however kind of crudely stated, and could cause misclassification in the less
 obvious cases. This could possibly have better effect when using a penilization
 function as in the case of \citep{paper1}, where every embedding is tried out
 and the best one is returned. This is shown in the case of their embedding of
-case 8. This goes wrong for \citep{paper} due to the hat being interpreted as
+case 8. This goes wrong for \citep{paper3} due to the hat being interpreted as
 horns. This specific misclassification is not too problematic,
 but this same issue can arise for the anatomical information
 extraction. One of the rules for the anatomical interpretation of humanoid
@@ -475,13 +531,12 @@ extent viable options for easy rigging, but due to their qualitative differences
 the domains in which they can be best applied differ quite a lot.
 Here we will discuss some practical applications that we envision for these
 different methods.
-% Usase of paper 1 seems good for novice use
-%Paper 1 is limited to biped characters, but can deal with very cartoonish
+
 As we have seen in the evaluation, \citep{paper1} is currently limited to biped
-character rigging, but can correctly rig cartoonischi looking  characters. In addition, it can be
-corrected by an end user that does not really need to know much about the 3d
+character rigging, but can correctly rig cartoonish looking  characters. In addition, it can be
+corrected by an end user that does not really need to know much about the 3D
 modelling process. Therefore, it would be interesting to integrate this method into
-frameworks where 3D models are created from 2D drawings and skechtes. Some
+frameworks where 3D models are created from 2D drawings and sketches. Some
 previous research with promising results has already been done in this topic
 \citep{paper4}, but the rigging part has not yet been integrated. If this automatic rigging
 algorithm is used, where the template skeleton is equipped with some basic
@@ -491,7 +546,7 @@ of the skeleton.
 
 Due to the method of \citep{paper2} setting heavy restrictions on input pose,
 not having a clear boundary of what can be correctly rigged, and not
-having an easy way to correct the final rendering without 3d modelling software
+having an easy way to correct the final rendering without 3D modelling software
 or limited knowledge, its use seems strictly limited to experts in the field of 3D
 modelling, that would like a less cumbersome method of rigging. This method
 could save a lot of time for more demanding characters, like spiders or other
@@ -527,8 +582,8 @@ makes a lot of restrictions on the incoming modeller, making the use more
 constraint. It is also not directly clear what can and cannot directly be
 rigged, making it at best a tool for expert modellers. 
 
-The combined approah could rig a wide range of diverse characters, but is mostly
-limited to models with realistic proportions, and didn
+The combined approach could rig a wide range of diverse characters, but is mostly
+limited to models with realistic proportions, and didn't
 
 
 \bibliographystyle{plain}
